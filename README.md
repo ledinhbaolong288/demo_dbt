@@ -12,7 +12,7 @@
 9. [Data Quality Tests](#data-quality-tests)
 10. [Kết Nối Với Các Data Warehouse](#kết-nối-với-các-data-warehouse)
 11. [Hướng Dẫn Sử Dụng](#hướng-dẫn-sử-dụng)
-    - [PostgreSQL](#hướng-dẫn-sử-dụng-dbt-với-postgresql)
+    - [PostgreSQL](#2-truy-cập-postgresql-database)
     - [Oracle](#hướng-dẫn-sử-dụng-dbt-với-oracle-database)
     - [Redshift](#hướng-dẫn-sử-dụng-dbt-với-redshift)
     - [Trino](#hướng-dẫn-sử-dụng-dbt-với-trino)
