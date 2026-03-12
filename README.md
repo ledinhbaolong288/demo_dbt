@@ -1356,6 +1356,30 @@ pip install dbt-oracle
 # Bước 2: Cấu hình profiles.yml với Oracle connection
 # Xem phần "Kết Nối Với Các Data Warehouse > DBT + Oracle Database"
 
+ORACLE_CONFIG = {
+    "host": os.getenv("POSTGRES_HOST"),
+    "port": os.getenv("POSTGRES_PORT"),
+    "dbname": os.getenv("POSTGRES_DB"),
+    "user": os.getenv("POSTGRES_USER"),
+    "password": os.getenv("POSTGRES_PASSWORD"),
+}
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "Data_src"
+
+def get_connection():
+    # print("Connecting to PostgreSQL...", DB_CONFIG)
+    return oracledb.connect(**ORACLE_CONFIG)
+
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "Data_src"
+
+def get_connection():
+    # print("Connecting to PostgreSQL...", DB_CONFIG)
+    return psycopg2.connect(**DB_CONFIG)
+
+
 # Bước 3: Test kết nối
 dbt debug
 
@@ -1524,6 +1548,22 @@ pip install dbt-redshift
 
 # Bước 2: Cấu hình profiles.yml với Redshift connection
 # Xem phần "Kết Nối Với Các Data Warehouse > DBT + Amazon Redshift"
+
+DB_CONFIG = {
+    "host": os.getenv("REDSHIFT_HOST"),
+    "port": os.getenv("REDSHIFT_PORT"),
+    "dbname": os.getenv("REDSHIFT_DB"),
+    "user": os.getenv("REDSHIFT_USER"),
+    "password": os.getenv("REDSHIFT_PASSWORD"),
+}
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "Data_src"
+
+def get_connection():
+    # print("Connecting to REDSHIFT...", DB_CONFIG)
+    return psycopg2.connect(**DB_CONFIG)
+
 
 # Bước 3: Test kết nối
 dbt debug
@@ -1716,6 +1756,22 @@ pip install dbt-trino
 
 # Bước 2: Cấu hình profiles.yml
 # Xem phần "Kết Nối Với Các Data Warehouse > DBT + Trino"
+
+TRINO_CONFIG = {
+    "host": os.getenv("TRINO_HOST"),
+    "port": int(os.getenv("TRINO_PORT", 8080)),
+    "user": os.getenv("TRINO_USER"),
+    "catalog": os.getenv("TRINO_CATALOG"),
+    "schema": os.getenv("TRINO_SCHEMA")
+}
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "Data_src"
+
+def get_connection():
+    # print("Connecting to Trino...", TRINO_CONFIG)
+    return trino.dbapi.connect(**TRINO_CONFIG)
+
 
 # Bước 3: Test kết nối
 dbt debug
