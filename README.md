@@ -85,8 +85,10 @@ Dự án này minh họa:
 - CPU: 2 cores
 
 ### Ports Cần Mở
-- **5432**: PostgreSQL database (localhost:5432)
-
+- **5432**: PostgreSQL database
+- **5439**: Amazon Redshift
+- **1521**: Oracle
+- **8080, 8443**: Trino
 ---
 
 ## Giới Thiệu DBT và Cơ Chế Hoạt Động
@@ -295,7 +297,10 @@ Found 3 models, 5 tests, 0 snapshots, 0 analyses, 0 macros, 0 operations, 0 seed
 cd \Demo\demo_dbt
 
 # Chuẩn bị các package install trên file Dockerfile
-# - dbt-postgres     : Thư viện adapter dbt cho PostgreSQL
+- dbt-postgres     : Thư viện adapter dbt cho PostgreSQL
+- dbt-redshift     : Thư viện adapter dbt cho Redshift
+- dbt-oracle       : Thư viện adapter dbt cho oracle
+- dbt-trino        :Thư viện adapter dbt cho trino
 # - psycopg2-binary  : Thư viện kết nối Python với PostgreSQL
 # - python-dotenv    : Thư viện đọc environment variables
 
@@ -481,11 +486,11 @@ Script `main.py` thực hiện các bước:
 1. **Kết nối Database**
    ```python
    DB_CONFIG = {
-       "host": "postgres",
-       "port": 5432,
-       "dbname": "analytics",
-       "user": "postgres",
-       "password": "postgres",
+       "host": "DB_HOST",
+       "port": "DB_PORT",
+       "dbname": "DB_DBNAME",
+       "user": "user",
+       "password": "password",
    }
    ```
 
