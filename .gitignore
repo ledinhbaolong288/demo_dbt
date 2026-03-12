@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# dbt
+dbt_demo/target/
+dbt_demo/logs/
+dbt_demo/dbt_packages/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Environment / secrets
+.env
+profiles.yml
+
+# Docker
+*.log

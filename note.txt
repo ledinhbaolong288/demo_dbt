@@ -1,0 +1,27 @@
+C:\Users\ASUS\AppData\Local\Docker\wsl
+
+1. Tải docker -> Tải postgres image
+
+docker run -d \
+  --name postgres-dbt \
+  -p 5432:5432 \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=analytics \
+  postgres:15
+  
+  
+docker compose up -d --build
+docker compose exec dbt python /workspace/main.py
+docker compose exec dbt dbt build
+
+docker exec -it postgres-dbt psql -U postgres -d analytics
+
+\dn: list schema
+\dt: list table
+
+select * from raw.orders_raw
+select * from raw.users_raw;
+select * from raw.users_raw;
+select * from dbt_dev.stg_users;
+select * from dbt_dev.stg_users;

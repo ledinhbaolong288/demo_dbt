@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres-dbt
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  dbt:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dbt-postgres
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    volumes:
+      - .:/workspace
+      - ./profiles.yml:/root/.dbt/profiles.yml
+    working_dir: /workspace/dbt_demo
+    environment:
+      DBT_PROFILES_DIR: /root/.dbt
+    entrypoint: ["tail", "-f", "/dev/null"]
+
+volumes:
+  postgres_data:
