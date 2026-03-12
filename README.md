@@ -155,7 +155,7 @@ Dự án này minh họa:
     ┌──────────────────────────┐
     │  WAREHOUSE / LAKEHOUSE   │
     │  (PostgreSQL, Redshift,  │
-    │   BigQuery, Snowflake)   │
+    │   Oracle, Trino)   │
     └──────────────────────────┘
                 │
                 ▼
@@ -172,7 +172,8 @@ Dự án này minh họa:
 ```
 Input: models/*.sql, dbt_project.yml, profiles.yml
               ↓
-        Parse Jinja2 templates
+        Parse Jinja2 template
+            ({{ ref() }})
               ↓
   Build Directed Acyclic Graph (DAG)
               ↓
