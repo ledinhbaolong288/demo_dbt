@@ -161,34 +161,34 @@ Stage 4: DATA QUALITY VALIDATION (DBT Tests)
 ```
 ┌──────────────────────────────────────┐
 │      Docker Compose Network          │
-│      (Shared bridge network)          │
+│      (Shared bridge network)         │
 ├──────────────────────────────────────┤
 │                                      │
-│  ┌──────────────────────────────┐   │
-│  │   PostgreSQL Container       │   │
-│  │   (postgres:15)              │   │
-│  │                              │   │
-│  │  - Port: 5432               │   │
-│  │  - Volume: postgres_data    │   │
-│  │  - Environment:             │   │
-│  │    POSTGRES_USER: postgres  │   │
-│  │    POSTGRES_PASSWORD: ...   │   │
-│  │    POSTGRES_DB: analytics   │   │
-│  └──────────────────────────────┘   │
+│  ┌──────────────────────────────┐    │
+│  │   PostgreSQL Container       │    │
+│  │   (postgres:15)              │    │
+│  │                              │    │
+│  │  - Port: 5432                │    │
+│  │  - Volume: postgres_data     │    │
+│  │  - Environment:              │    │
+│  │    POSTGRES_USER: postgres   │    │
+│  │    POSTGRES_PASSWORD: ...    │    │
+│  │    POSTGRES_DB: analytics    │    │
+│  └──────────────────────────────┘    │
 │          ↑                           │
-│          │ (Hostname: postgres)     │
+│          │ (Hostname: postgres)      │
 │          │                           │
-│  ┌──────────────────────────────┐   │
-│  │   DBT Container              │   │
-│  │   (Custom dbt-postgres)      │   │
-│  │                              │   │
-│  │  - Volume: ./:/workspace    │   │
-│  │  - Volume: profiles.yml     │   │
-│  │  - Working: /workspace/...  │   │
-│  │  - Environment:             │   │
-│  │    DBT_PROFILES_DIR: /root/ │   │
-│  │    .dbt                     │   │
-│  └──────────────────────────────┘   │
+│  ┌──────────────────────────────┐    │
+│  │   DBT Container              │    │
+│  │   (Custom dbt-postgres)      │    │
+│  │                              │    │
+│  │  - Volume: ./:/workspace     │    │
+│  │  - Volume: profiles.yml      │    │
+│  │  - Working: /workspace/...   │    │
+│  │  - Environment:              │    │
+│  │    DBT_PROFILES_DIR: /root/  │    │
+│  │    .dbt                      │    │
+│  └──────────────────────────────┘    │
 │                                      │
 └──────────────────────────────────────┘
 ```
@@ -280,9 +280,9 @@ dbt Execution Flow:
 │    created_at           │         │
 │    etl_time             │         │
 └─────────────────────────┘         │
-         ↓                           │
+         ↓                          │
     (dbt stg)                       │
-         ↓                           │
+         ↓                          │
 ┌─────────────────────────┐         │
 │   dbt_dev.stg_orders    │         │
 ├─────────────────────────┤         │
@@ -292,11 +292,11 @@ dbt Execution Flow:
 │    created_at           │         │
 │    etl_time             │         │
 └─────────────────────────┘         │
-         ↓ (JOIN)                    │
-         │                           │
-         └─────────────────────────┐ │
-                                   │ │
-                                   ↓ ↓
+         ↓ (JOIN)                   │
+         │                          │
+         └─────────────────────────┐│
+                                   ││
+                                   ↓↓
 ┌─────────────────────────┐ ┌─────────────────────────┐
 │   raw.users_raw         │ │  dbt_dev.stg_users      │
 ├─────────────────────────┤ ├─────────────────────────┤
@@ -308,14 +308,14 @@ dbt Execution Flow:
 └─────────────────────────┘ └─────────────────────────┘
          ↓ (dbt stg)
 ┌─────────────────────────────────────────────┐
-│        dbt_dev.fct_orders                    │
+│        dbt_dev.fct_orders                   │
 ├─────────────────────────────────────────────┤
 │ PK: order_id                                │
 │ FK: user_id                                 │
-│    user_name (from stg_users)              │
-│    email (from stg_users)                  │
-│    total_amount                            │
-│    created_at                              │
+│    user_name (from stg_users)               │
+│    email (from stg_users)                   │
+│    total_amount                             │
+│    created_at                               │
 └─────────────────────────────────────────────┘
 ```
 

@@ -109,14 +109,14 @@ Dự án này minh họa:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                   DATA SOURCES                          │
-│  (JSON, CSV, APIs, Databases, Data Lakes)             │
+│  (JSON, CSV, APIs, Databases, Data Lakes)               │
 └───────────────┬─────────────────────────────────────────┘
                 │
                 ▼
 ┌─────────────────────────────────────────────────────────┐
 │         DBT PARSING & COMPILATION                       │
 │  • Read .sql + .yml models                              │
-│  • Parse Jinja2 templates                              │
+│  • Parse Jinja2 templates                               │
 │  • Build dependency graph (DAG)                         │
 │  • Compile SQL for target database                      │
 └───────────────┬─────────────────────────────────────────┘
@@ -135,13 +135,13 @@ Dự án này minh họa:
         ┌──────────────────┐
         │ INTERMEDIATE     │
         │ LAYER (Optional) │
-        └─────────┬────────┘
+        └───────┬──────────┘
                 │
                 ▼
         ┌──────────────────┐
         │  MART / FACT     │
         │  LAYER           │
-        └─────────┬────────┘
+        └───────┬──────────┘
                 │
                 ▼
        ┌────────────────────┐
@@ -155,7 +155,7 @@ Dự án này minh họa:
     ┌──────────────────────────┐
     │  WAREHOUSE / LAKEHOUSE   │
     │  (PostgreSQL, Redshift,  │
-    │   Oracle, Trino)   │
+    │   Oracle, Trino)         │
     └──────────────────────────┘
                 │
                 ▼
@@ -221,7 +221,7 @@ Generate:
 $ dbt docs serve → Open browser to http://localhost:8000
 ```
 
-### Ví Dụ Thực Tế: Chạy `dbt build`
+### Ví Dụ Thực Tế: Chạy `dbt build` 
 
 ```bash
 $ docker compose exec dbt dbt build
