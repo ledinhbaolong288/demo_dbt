@@ -288,6 +288,561 @@ Found 3 models, 5 tests, 0 snapshots, 0 analyses, 0 macros, 0 operations, 0 seed
 ✅ **Debugging** - Debug mode, compiled SQL inspection  
 
 ---
+---
+
+## Cơ Chế Hoạt Động Của DBT
+
+### Lý Thuyết Cơ Chế Hoạt Động
+
+**DBT (Data Build Tool)** hoạt động theo mô hình **"Software Engineering for Analytics"** - áp dụng các nguyên tắc phát triển phần mềm vào việc transform dữ liệu. Thay vì viết stored procedures phức tạp hoặc orchestration scripts, DBT cho phép:
+
+1. **Viết transformation bằng SQL thuần túy** - Không cần ngôn ngữ lập trình khác
+2. **Quản lý dependencies tự động** - DBT tự xây dựng Directed Acyclic Graph (DAG)
+3. **Version control toàn bộ pipeline** - Git control cho tất cả transformations
+4. **Data quality testing tích hợp** - Built-in tests như not_null, unique, relationships
+5. **Documentation tự động** - Generate docs từ code và descriptions
+6. **Modularity và reusability** - Models, macros, tests có thể reuse
+
+#### Nguyên Lý Hoạt Động Cơ Bản
+
+```
+Raw Data → DBT Models → Analytics-Ready Tables
+     ↓           ↓               ↓
+  Sources   Transformations   Materializations
+```
+
+DBT hoạt động theo **3 giai đoạn chính**:
+
+1. **Parse & Compile**: Đọc .sql + .yml → Parse Jinja2 → Compile SQL
+2. **Execute**: Chạy compiled SQL trên warehouse theo dependency order
+3. **Test & Validate**: Chạy data quality tests → Generate documentation
+
+### Cấu Trúc Folder Trong DBT Project
+
+DBT project có cấu trúc folder chuẩn như sau:
+
+```
+dbt_project/
+├── dbt_project.yml          # Cấu hình project chính
+├── profiles.yml              # Cấu hình kết nối database (thường ở ngoài)
+├── models/                   # Thư mục chứa models (.sql files)
+│   ├── schema.yml           # Định nghĩa models và tests
+│   ├── staging/             # Staging layer (raw → clean)
+│   │   ├── stg_orders.sql   # Staging model cho orders
+│   │   └── stg_users.sql    # Staging model cho users
+│   └── marts/               # Mart layer (business logic)
+│       └── fct_orders.sql   # Fact table cho orders
+├── tests/                   # Custom data quality tests
+│   └── order_amount_positive.sql
+├── macros/                  # Reusable SQL functions
+├── seeds/                   # Static CSV data
+├── snapshots/               # Slowly Changing Dimensions
+├── analyses/                # Ad-hoc queries (không tạo tables)
+├── target/                  # Generated artifacts (compiled SQL, docs)
+│   ├── compiled/           # Compiled SQL files
+│   ├── run/                # Executed models
+│   ├── manifest.json       # Project metadata
+│   └── run_results.json    # Execution results
+└── logs/                   # Execution logs
+```
+
+**Mô tả chi tiết từng folder:**
+
+| Folder | Mục đích | Ví dụ |
+|--------|----------|-------|
+| **models/** | Chứa các SQL transformation files | stg_orders.sql, fct_orders.sql |
+| **tests/** | Custom data quality tests | order_amount_positive.sql |
+| **macros/** | Reusable SQL snippets | date formatting, calculations |
+| **seeds/** | Static lookup tables từ CSV | country_codes.csv |
+| **snapshots/** | SCD Type 2 tracking | user_history_snapshot.sql |
+| **analyses/** | Ad-hoc queries (không tạo tables) | exploratory_analysis.sql |
+| **target/** | Generated files (không commit) | compiled SQL, docs, metadata |
+
+### Các File Cấu Hình Quan Trọng
+
+#### 1. dbt_project.yml
+
+**Tác dụng:** File cấu hình chính của DBT project, định nghĩa:
+- Tên project và version
+- Profile sử dụng (tham chiếu tới profiles.yml)
+- Cấu hình models (materialization, schema)
+- Paths cho models, tests, seeds, etc.
+- Jinja2 variables và macros
+
+**Ví dụ cấu hình:**
+
+```yaml
+# dbt_project.yml - Cấu hình project DBT
+name: "dbt_demo"                    # Tên project (phải unique)
+version: "1.0.0"                    # Version của project
+config-version: 2                   # DBT config version
+
+profile: "dbt_demo"                 # Tham chiếu tới profile trong profiles.yml
+
+# Paths configuration
+model-paths: ["models"]             # Thư mục chứa models
+analysis-paths: ["analyses"]        # Thư mục chứa analyses
+test-paths: ["tests"]               # Thư mục chứa custom tests
+seed-paths: ["seeds"]               # Thư mục chứa seed files
+macro-paths: ["macros"]             # Thư mục chứa macros
+snapshot-paths: ["snapshots"]       # Thư mục chứa snapshots
+
+# Target path (generated files)
+target-path: "target"               # Thư mục chứa compiled files
+clean-targets:                      # Files to clean khi dbt clean
+  - "target"
+  - "dbt_packages"
+
+# Model configurations
+models:
+  dbt_demo:                         # Project name
+    staging:                        # Folder models/staging/
+      +materialized: view           # Tất cả models trong staging = VIEW
+      +schema: dbt_dev              # Schema để tạo models
+    marts:                          # Folder models/marts/
+      +materialized: table          # Tất cả models trong marts = TABLE
+      +schema: dbt_dev              # Schema để tạo models
+
+# Variables (có thể override từ command line)
+vars:
+  my_var: "default_value"
+
+# Seeds configuration
+seeds:
+  dbt_demo:
+    +schema: dbt_dev
+```
+
+**Khi nào DBT đọc dbt_project.yml:**
+- Khi khởi tạo project (`dbt init`)
+- Khi parse project (`dbt parse`)
+- Khi chạy bất kỳ command nào
+
+#### 2. schema.yml
+
+**Tác dụng:** File định nghĩa metadata cho models và tests, bao gồm:
+- Mô tả model (description)
+- Định nghĩa columns và data types
+- Cấu hình tests cho từng column
+- Relationships giữa models
+- Documentation cho data lineage
+
+**Ví dụ schema.yml:**
+
+```yaml
+# schema.yml - Định nghĩa models, columns và tests
+version: 2
+
+models:
+  # Định nghĩa model stg_users
+  - name: stg_users
+    description: "Staging table cho user data từ raw.users_raw"
+    
+    columns:
+      - name: user_id
+        description: "Primary key cho users"
+        tests:
+          - not_null                    # Test: không được NULL
+          - unique                      # Test: không được duplicate
+      
+      - name: user_name
+        description: "Tên đầy đủ của user"
+        tests:
+          - not_null
+      
+      - name: email
+        description: "Email address của user"
+        tests:
+          - not_null
+          - unique
+      
+      - name: created_at
+        description: "Ngày tạo tài khoản"
+      
+      - name: updated_at
+        description: "Ngày cập nhật cuối"
+      
+      - name: etl_time
+        description: "Timestamp khi load data"
+
+  # Định nghĩa model stg_orders
+  - name: stg_orders
+    description: "Staging table cho order data từ raw.orders_raw"
+    
+    columns:
+      - name: order_id
+        description: "Primary key cho orders"
+        tests:
+          - not_null
+          - unique
+      
+      - name: user_id
+        description: "Foreign key tới stg_users"
+        tests:
+          - not_null
+          - relationships:               # Test FK constraint
+              to: ref('stg_users')       # Reference tới model stg_users
+              field: user_id             # Column để join
+      
+      - name: total_amount
+        description: "Tổng giá trị đơn hàng"
+        tests:
+          - not_null
+      
+      - name: created_at
+        description: "Ngày tạo đơn hàng"
+      
+      - name: etl_time
+        description: "Timestamp khi load data"
+
+  # Định nghĩa model fct_orders
+  - name: fct_orders
+    description: "Fact table kết hợp orders + users cho analytics"
+    
+    columns:
+      - name: order_id
+        description: "Order ID"
+        tests:
+          - not_null
+          - unique
+          - relationships:
+              to: ref('stg_orders')
+              field: order_id
+      
+      - name: user_id
+        description: "User ID"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_users')
+              field: user_id
+      
+      - name: user_name
+        description: "User name (enriched)"
+      
+      - name: email
+        description: "User email (enriched)"
+      
+      - name: total_amount
+        description: "Order amount"
+        tests:
+          - not_null
+      
+      - name: created_at
+        description: "Order creation date"
+```
+
+**Khi nào DBT đọc schema.yml:**
+- Khi parse project (`dbt parse`)
+- Khi chạy tests (`dbt test`)
+- Khi generate documentation (`dbt docs generate`)
+
+### Chi Tiết Các Lệnh DBT Và Các Bước Thực Hiện
+
+#### 1. `dbt debug`
+
+**Mục đích:** Kiểm tra môi trường và kết nối database
+
+**Các bước DBT thực hiện:**
+
+```
+1. Validate DBT Installation
+   ├── Check dbt version
+   ├── Check installed adapters (dbt-postgres, etc.)
+   └── Validate Python environment
+
+2. Parse Project Configuration
+   ├── Read dbt_project.yml
+   ├── Validate project structure
+   ├── Check model paths exist
+   └── Validate Jinja2 syntax
+
+3. Load Profile Configuration
+   ├── Read profiles.yml (hoặc từ DBT_PROFILES_DIR)
+   ├── Validate profile exists
+   ├── Check target configuration
+   └── Validate adapter settings
+
+4. Test Database Connection
+   ├── Initialize adapter (postgres, redshift, etc.)
+   ├── Test connection parameters
+   ├── Execute simple query (SELECT 1)
+   └── Validate permissions (CREATE, SELECT, etc.)
+
+5. Validate Project Structure
+   ├── Check all model files exist
+   ├── Parse SQL syntax (basic)
+   ├── Validate ref() references
+   └── Check for circular dependencies
+
+6. Report Results
+   ├── Connection status (Open/Closed)
+   ├── Configuration issues
+   ├── Missing files
+   └── Recommendations
+```
+
+**Ví dụ output thành công:**
+
+```bash
+$ dbt debug
+
+dbt version: 1.5.0
+python version: 3.10.0
+python path: /usr/local/bin/python
+os info: Linux-5.10.0-0-generic-x86_64-with-glibc2.31
+
+Running with dbt=1.5.0
+dbt_project.yml file:
+  + Found at /workspace/dbt_demo/dbt_project.yml
+  + Valid
+  + Project name: dbt_demo
+
+profiles.yml file:
+  + Found at /root/.dbt/profiles.yml
+  + Valid
+  + Profile: dbt_demo
+
+Connection:
+  + type: postgres
+  + host: postgres
+  + port: 5432
+  + user: postgres
+  + database: analytics
+  + schema: dbt_dev
+  + state: Open
+
+All checks passed!
+```
+
+**Ví dụ output thất bại:**
+
+```bash
+$ dbt debug
+
+Connection:
+  type: postgres
+  host: postgres
+  port: 5432
+  user: postgres
+  database: analytics
+  schema: dbt_dev
+  state: Closed
+
+Connection Error:
+  FATAL: database "analytics" does not exist
+```
+
+#### 2. `dbt run`
+
+**Mục đích:** Thực thi models, tạo tables/views trong database
+
+**Các bước DBT thực hiện:**
+
+```
+1. Parse & Validate Project
+   ├── Read dbt_project.yml
+   ├── Read schema.yml
+   ├── Parse all model files (.sql)
+   └── Validate syntax và dependencies
+
+2. Build Dependency Graph (DAG)
+   ├── Analyze ref() relationships
+   ├── Detect circular dependencies
+   ├── Order models by dependencies
+   └── Create execution plan
+
+3. Compile SQL Templates
+   ├── Parse Jinja2 expressions
+   ├── Resolve ref() to actual table names
+   ├── Apply materialization configs
+   └── Generate final SQL statements
+
+4. Execute Models in Order
+   ├── Start with models có no dependencies
+   ├── Execute compiled SQL
+   ├── Track execution status (PASS/FAIL)
+   └── Continue with dependent models
+
+5. Handle Materialization
+   ├── VIEW: CREATE OR REPLACE VIEW
+   ├── TABLE: CREATE OR REPLACE TABLE
+   ├── INCREMENTAL: INSERT/UPDATE logic
+   └── EPHEMERAL: Inline in dependent queries
+
+6. Generate Artifacts
+   ├── Save compiled SQL to target/compiled/
+   ├── Save run results to target/run/
+   ├── Update manifest.json
+   └── Log execution details
+```
+
+**Ví dụ output:**
+
+```bash
+$ dbt run
+
+Running with dbt=1.5.0
+Found 3 models, 0 tests, 0 snapshots, 0 analyses, 0 macros, 0 operations, 0 seed files, 0 sources
+
+13:45:20  Running 1 of 3 START table model dbt_demo.stg_users
+13:45:21  Running 1 of 3 PASS table model dbt_demo.stg_users [CREATE TABLE 0.50s]
+
+13:45:21  Running 2 of 3 START table model dbt_demo.stg_orders
+13:45:22  Running 2 of 3 PASS table model dbt_demo.stg_orders [CREATE TABLE 0.45s]
+
+13:45:22  Running 3 of 3 START table model dbt_demo.fct_orders
+13:45:23  Running 3 of 3 PASS table model dbt_demo.fct_orders [CREATE TABLE 0.38s]
+
+Finished running 3 models in 1.33s.
+```
+
+#### 3. `dbt test`
+
+**Mục đích:** Chạy data quality tests để validate dữ liệu
+
+**Các bước DBT thực hiện:**
+
+```
+1. Parse Test Definitions
+   ├── Read schema.yml for built-in tests
+   ├── Load custom tests từ tests/ folder
+   ├── Validate test syntax
+   └── Build test execution plan
+
+2. Generate Test Queries
+   ├── not_null: SELECT * FROM model WHERE column IS NULL
+   ├── unique: SELECT column, COUNT(*) FROM model GROUP BY column HAVING COUNT(*) > 1
+   ├── relationships: SELECT * FROM model WHERE column NOT IN (SELECT column FROM ref_model)
+   └── custom: Execute custom SQL logic
+
+3. Execute Tests in Parallel
+   ├── Run test queries on database
+   ├── Track execution time
+   ├── Collect failure details
+   └── Aggregate results
+
+4. Validate Results
+   ├── PASS: Query returns 0 rows
+   ├── FAIL: Query returns > 0 rows
+   └── ERROR: SQL execution failed
+
+5. Generate Reports
+   ├── Update run_results.json
+   ├── Log test failures
+   └── Provide failure details
+```
+
+**Ví dụ output:**
+
+```bash
+$ dbt test
+
+Running with dbt=1.5.0
+Found 3 models, 5 tests, 0 snapshots, 0 analyses, 0 macros, 0 operations, 0 seed files, 0 sources
+
+13:45:24  Running 1 of 5 START test not_null_stg_users_user_id
+13:45:24  Running 1 of 5 PASS test not_null_stg_users_user_id [PASSED 0.12s]
+
+13:45:24  Running 2 of 5 START test unique_stg_users_user_id
+13:45:24  Running 2 of 5 PASS test unique_stg_users_user_id [PASSED 0.10s]
+
+13:45:25  Running 3 of 5 START test not_null_stg_orders_order_id
+13:45:25  Running 3 of 5 PASS test not_null_stg_orders_order_id [PASSED 0.11s]
+
+13:45:25  Running 4 of 5 START test relationships_fct_orders_user_id__user_id__ref__stg_users
+13:45:25  Running 4 of 5 PASS test relationships_fct_orders_user_id__user_id__ref__stg_users [PASSED 0.15s]
+
+13:45:26  Running 5 of 5 START test order_amount_positive
+13:45:26  Running 5 of 5 PASS test order_amount_positive [PASSED 0.08s]
+
+Finished running 5 tests in 0.56s.
+```
+
+#### 4. `dbt build`
+
+**Mục đích:** Thực hiện đầy đủ pipeline (run + test)
+
+**Các bước DBT thực hiện:**
+
+```
+dbt build = dbt run + dbt test
+
+1. Execute dbt run (xem chi tiết ở trên)
+   ├── Parse models
+   ├── Build DAG
+   ├── Compile SQL
+   ├── Execute models
+   └── Generate artifacts
+
+2. Execute dbt test (xem chi tiết ở trên)
+   ├── Parse tests
+   ├── Generate test queries
+   ├── Execute tests
+   └── Validate results
+
+3. Aggregate Results
+   ├── Combine run + test results
+   ├── Update run_results.json
+   ├── Generate summary report
+   └── Exit with appropriate code
+```
+
+**Ví dụ output:**
+
+```bash
+$ dbt build
+
+Running with dbt=1.5.0
+Found 3 models, 5 tests, 0 snapshots, 0 analyses, 0 macros, 0 operations, 0 seed files, 0 sources
+
+13:45:20  Running 1 of 3 START table model dbt_demo.stg_users
+13:45:21  Running 1 of 3 PASS table model dbt_demo.stg_users [CREATE TABLE 0.50s]
+
+13:45:21  Running 2 of 3 START table model dbt_demo.stg_orders
+13:45:22  Running 2 of 3 PASS table model dbt_demo.stg_orders [CREATE TABLE 0.45s]
+
+13:45:22  Running 3 of 3 START table model dbt_demo.fct_orders
+13:45:23  Running 3 of 3 PASS table model dbt_demo.fct_orders [CREATE TABLE 0.38s]
+
+13:45:24  Running 1 of 5 START test not_null_stg_users_user_id
+13:45:24  Running 1 of 5 PASS test not_null_stg_users_user_id [PASSED 0.12s]
+
+13:45:24  Running 2 of 5 START test unique_stg_users_user_id
+13:45:24  Running 2 of 5 PASS test unique_stg_users_user_id [PASSED 0.10s]
+
+13:45:25  Running 3 of 5 START test not_null_stg_orders_order_id
+13:45:25  Running 3 of 5 PASS test not_null_stg_orders_order_id [PASSED 0.11s]
+
+13:45:25  Running 4 of 5 START test relationships_fct_orders_user_id__user_id__ref__stg_users
+13:45:25  Running 4 of 5 PASS test relationships_fct_orders_user_id__user_id__ref__stg_users [PASSED 0.15s]
+
+13:45:26  Running 5 of 5 START test order_amount_positive
+13:45:26  Running 5 of 5 PASS test order_amount_positive [PASSED 0.08s]
+
+Finished running 3 models, 5 tests in 1.89s.
+```
+
+### Workflow Hoàn Chỉnh: dbt debug → dbt run → dbt test → dbt build
+
+```
+1. dbt debug     → Validate environment & connection
+2. dbt run       → Create/update models in database
+3. dbt test      → Validate data quality
+4. dbt build     → Run + Test (full pipeline)
+```
+
+**Best Practice:** Luôn chạy `dbt debug` trước khi bắt đầu development để đảm bảo môi trường ổn định.
+
+---
+
+
+## Các bước dbt thực hiện
+
+Khi chạy:
+
+```bash
+dbt debug
 
 ## Cài Đặt và Khởi Động
 
@@ -1756,7 +2311,7 @@ pip install dbt-trino
 
 # Bước 2: Cấu hình profiles.yml
 # Xem phần "Kết Nối Với Các Data Warehouse > DBT + Trino"
-
+z
 TRINO_CONFIG = {
     "host": os.getenv("TRINO_HOST"),
     "port": int(os.getenv("TRINO_PORT", 8080)),
