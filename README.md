@@ -1044,9 +1044,9 @@ Script `main.py` thực hiện các bước:
    DB_CONFIG = {
        "host": "DB_HOST",
        "port": "DB_PORT",
-       "dbname": "DB_DBNAME",
-       "user": "user",
-       "password": "password",
+       "dbname": os.getenv("DB_DBNAME"),
+       "user": os.getenv("user"),
+       "password": os.getenv("password"),
    }
    ```
 
