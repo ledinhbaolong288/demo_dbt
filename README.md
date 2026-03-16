@@ -1972,8 +1972,8 @@ Connection Type: Oracle
 Host: oracle.example.com
 Port: 1521
 Service Name: ORCL
-Username: dbt_user
-Password: your_password
+Username:
+Password:
 
 ✓ Yêu cầu thành công: Kết nối thành công, xem được tables
 ```
@@ -2165,9 +2165,9 @@ psql -h redshift-cluster.abc123.us-east-1.redshift.amazonaws.com \
 Connection Type: Redshift (hoặc PostgreSQL)
 Host: redshift-cluster.abc123.us-east-1.redshift.amazonaws.com
 Port: 5439
-Username: admin
-Password: your_password
-Database: analytics
+Username:
+Password:
+Database:
 
 ✓ Yêu cầu thành công: Kết nối thành công, xem được tables
 ```
@@ -2386,8 +2386,8 @@ Host: trino-coordinator.example.com
 Port: 8080
 Catalog: hive (hoặc iceberg, postgres, etc.)
 Schema: dbt_dev
-Username: dbt_user
-Password: your_password
+Username:
+Password:
 
 ✓ Yêu cầu thành công: Kết nối thành công, xem được tables
 ```
@@ -2551,8 +2551,8 @@ services:
     image: postgres:15                    # PostgeSQL 15
     container_name: postgres-dbt
     environment:
-      POSTGRES_USER: postgres             # Default user
-      POSTGRES_PASSWORD: postgres         # Default password
+      POSTGRES_USER:             # Default user
+      POSTGRES_PASSWORD:         # Default password
       POSTGRES_DB: analytics              # Default database
     ports:
       - "5432:5432"                       # Map port
@@ -2606,8 +2606,8 @@ dbt_demo:               # Target name (dbt_project.yml reference)
     dev:
       type: postgres              # Database type
       host: postgres              # Service name (docker)
-      user: postgres              # User
-      password: postgres          # Password
+      user:              # User
+      password:          # Password
       port: 5432                  # Port
       dbname: analytics           # Database
       schema: dbt_dev             # Schema for models
