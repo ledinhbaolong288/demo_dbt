@@ -1,13 +1,13 @@
-name: "dbt_demo"
+name: "raw"
 version: "1.0"
 config-version: 2
 
-profile: "dbt_demo"
+profile: "raw"
 
 model-paths: ["models"]
 
 models: 
-  dbt_demo:
+  raw:
     staging:
       +materialized: view
     marts:
